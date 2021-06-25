@@ -30,31 +30,42 @@ function showMovieDetail(movie) {
 	        </div>`;
 }
 
-$('.search-button').on('click', function() {
-	$.ajax({
-		url: 'http://www.omdbapi.com/?apikey=fa7ef84d&s=' + $('.input-keyword').val(),
-		success: results => {
-			const movies = results.Search;
-			let cards = '';
-			movies.forEach((movie) => {
-				cards += showCards(movie);
-			});
-			$('.movie-container').html(cards);
-			$('.modal-detail-button').on('click', function() {
-				$.ajax({
-					url: 'http://www.omdbapi.com/?apikey=fa7ef84d&i=' + $(this).data('imdbid'),
-					success: (movie) => {
-						const movieDetail = showMovieDetail(movie);
-						$(`.modal-body`).html(movieDetail);
-					},
-					error: (e) => {
-						console.log(e.responseText);
-					}
-				});
-			});
-		},
-		error: e => {
-			console.log(e.responseText);
-		}
-	});
+function getMovies(keyword) {
+	return fetch('http://www.omdbapi.com/?apikey=fa7ef84d&s=' + keyword)
+	 .then(response => response.json())
+	 .then(response => response.Search);
+}
+
+function updateUI(movies) {
+	let cards = '';
+	movies.forEach(movie => cards += showCards(movie));
+	const movieContainer = document.querySelector('.movie-container');
+	movieContainer.innerHTML = cards;
+}
+
+function getMovieDetail(imdbid) {
+	return fetch('http://www.omdbapi.com/?apikey=fa7ef84d&i=' + imdbid)
+	 .then(response => response.json())
+	 .then(movie => movie);
+}
+
+function updateUIDetail(movie) {
+	const movieDetail = showMovieDetail(movie);
+ 	const modalBody = document.querySelector('.modal-body');
+ 	modalBody.innerHTML = movieDetail;
+}
+
+const searchButton = document.querySelector('.search-button');
+searchButton.addEventListener('click', async function() {
+	const inputKeyword = document.querySelector('.input-keyword');
+	const movies = await getMovies(inputKeyword.value);
+	updateUI(movies);
 });
+
+document.addEventListener('click', async function(e) {
+	if (e.target.classList.contains('modal-detail-button')) {
+		const imdbid = e.target.dataset.imdbid;
+		const movieDetail = await getMovieDetail(imdbid);
+		updateUIDetail(movieDetail);
+	}
+})
